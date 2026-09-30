@@ -1,0 +1,22 @@
+# Two independent CAN buses, one leader/follower pair per bus.
+# The current openpi Piper policy is 7D; a 14D training adapter is required.
+output: /media/ubun/16T/Dataset/piper_data/piper_capture_dual_v21
+task: Move the book with both arms
+fps: 30
+arms:
+  - name: left
+    state_can: can_left
+    command_can: can_left
+  - name: right
+    state_can: can_right
+    command_can: can_right
+cameras:
+  - name: top_head
+    backend: realsense
+    serial: REPLACE_HEAD_SERIAL
+  - name: hand_left
+    backend: realsense
+    serial: REPLACE_LEFT_WRIST_SERIAL
+  - name: hand_right
+    backend: realsense
+    serial: REPLACE_RIGHT_WRIST_SERIAL

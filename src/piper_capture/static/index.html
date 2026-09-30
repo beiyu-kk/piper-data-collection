@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f8">
+  <title>Piper Capture · 数据采集</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/style.css">
+  <script defer src="/static/lucide.min.js"></script>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+  <aside class="rail" aria-label="主导航">
+    <a class="brand-mark" href="/" aria-label="Piper Capture"><i data-lucide="scan"></i></a>
+    <button class="rail-button active" data-view="capture" aria-label="采集工作台" title="采集工作台"><i data-lucide="video"></i></button>
+    <button class="rail-button" data-view="history" aria-label="数据记录" title="数据记录"><i data-lucide="database"></i></button>
+    <span class="rail-spacer"></span>
+    <button class="rail-button" id="devices-button" aria-label="设备详情" title="设备详情"><i data-lucide="settings-2"></i></button>
+    <span class="rail-bottom">LOCAL</span>
+  </aside>
+  <main>
+    <header class="page-header">
+      <div class="brand"><span class="wordmark">PIPER <span>CAPTURE</span></span><span class="divider"></span><span class="page-name">数据采集</span></div>
+      <div class="header-status"><span id="mode-badge" class="badge neutral">本地设备</span><span class="connection"><span id="connection-dot" class="dot amber"></span><span id="connection-text">连接中</span></span></div>
+    </header>
+    <div class="title-row"><div><div class="eyebrow">工作空间 / PIPER</div><h1 id="view-title">采集工作台</h1></div><span class="format-label"><i data-lucide="files"></i>LeRobot v2.1</span></div>
+    <div class="tabs" role="tablist" aria-label="工作空间视图">
+      <button class="tab active" role="tab" aria-selected="true" data-view="capture"><i data-lucide="radio"></i>实时采集</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="history"><i data-lucide="list-video"></i>数据记录 <span id="history-count">0</span></button>
+    </div>
+    <div id="notice" class="notice" role="status" hidden><i data-lucide="circle-alert"></i><span id="notice-text"></span></div>
+    <div id="replay-banner" class="replay-banner" hidden><span id="replay-status" role="status"></span><button id="replay-stop-global" class="button danger"><i data-lucide="square"></i>停止真机回放</button></div>
+    <section id="capture-view">
+      <div class="stats-row">
+        <div class="stat"><span>已保存轨迹</span><strong id="stat-episodes">0<span>条</span></strong></div>
+        <div class="stat"><span>累计采集</span><strong id="stat-duration">00:00<span>时长</span></strong></div>
+        <div class="stat"><span>可用空间</span><strong id="stat-disk">--<span>GB</span></strong></div>
+        <div class="stat session-indicator"><span>采集状态</span><strong><span id="session-dot" class="dot amber"></span><span id="session-state">连接中</span></strong></div>
+      </div>
+      <div class="workspace">
+        <div class="monitor">
+          <div class="section-heading"><h2><i data-lucide="camera"></i>相机画面</h2><span id="camera-summary" class="secondary">--</span></div>
+          <div id="camera-grid" class="camera-grid"></div>
+          <div class="outcome-counts" aria-label="已保存示教统计">
+            <div class="outcome-success"><i data-lucide="circle-check"></i><span>成功保存</span><strong id="success-count" aria-live="polite">0</strong><small>条</small></div>
+            <div class="outcome-failure"><i data-lucide="circle-x"></i><span>失败保存</span><strong id="failure-count" aria-live="polite">0</strong><small>条</small></div>
+          </div>
+          <div class="telemetry-heading section-heading"><h2><i data-lucide="activity"></i>主从臂状态</h2><span class="legend"><span><b class="line-key green"></b>从臂反馈</span><span><b class="line-key orange"></b>主臂目标</span></span></div>
+          <div class="joint-grid" id="joint-grid"></div>
+          <div class="source-strip"><span id="follower-status"></span><span id="leader-status"></span><span id="can-label" class="mono secondary"></span></div>
+        </div>
+        <aside class="capture-controls">
+          <div class="section-heading"><h2>当前任务</h2><span class="badge neutral" id="arm-type">单右臂</span></div>
+          <label for="task-input">任务指令</label>
+          <textarea id="task-input" rows="3" maxlength="2000" placeholder="输入本次示教任务" spellcheck="false"></textarea>
+          <div class="settings-row"><div><span>采样频率</span><strong id="capture-fps">30 <small>FPS</small></strong></div><div><span>最长时长</span><strong id="capture-limit">180 <small>秒</small></strong></div></div>
+          <div class="record-counter"><div><span id="record-state-label">本条轨迹</span><strong id="record-clock">00:00.0</strong></div><span class="frame-count"><b id="record-frames">0</b> 帧</span></div>
+          <button id="record-button" class="button primary record-button" disabled><i data-lucide="circle"></i><span>开始录制</span></button>
+          <div class="record-actions"><button id="failure-button" class="button danger-outline" disabled><i data-lucide="flag"></i>保存为失败</button><button id="stop-review-button" class="icon-button" title="停止并审核" aria-label="停止并审核" disabled><i data-lucide="clipboard-check"></i></button></div>
+          <label class="capture-review-mode"><input id="batch-mode" type="checkbox">停止后加入待审核</label>
+          <div class="record-quality"><span class="dot" id="quality-dot"></span><span id="quality-text">等待设备连接</span><span class="mono" id="queue-depth"></span></div>
+          <div class="pending-heading section-heading"><h2>待审核</h2><span class="count" id="pending-count">0</span></div>
+          <div id="batch-toolbar" class="batch-toolbar" hidden><label><input type="checkbox" id="pending-select-all" aria-label="选择全部待审核轨迹"><span id="pending-selection-count">已选 0 条</span></label><button id="batch-accept" class="icon-button" title="批量接受" aria-label="批量接受"><i data-lucide="check-check"></i></button><button id="batch-failure" class="icon-button" title="批量标记失败" aria-label="批量标记失败"><i data-lucide="flag"></i></button><button id="batch-discard" class="icon-button" title="批量丢弃" aria-label="批量丢弃"><i data-lucide="trash-2"></i></button></div>
+          <div id="batch-result" class="operation-result" role="status" hidden></div>
+          <div id="pending-list"><div class="empty-inline"><i data-lucide="clipboard-check"></i><span>暂无待审核轨迹</span></div></div>
+          <div class="activity-section"><h2>最近活动</h2><ol id="event-list" class="event-list"><li class="secondary">等待采集服务</li></ol></div>
+        </aside>
+      </div>
+    </section>
+    <section id="history-view" hidden>
+      <div class="history-toolbar"><h2>轨迹记录 <span class="count" id="saved-count">0</span></h2><div class="search-field"><i data-lucide="search"></i><input id="history-search" type="search" placeholder="搜索任务或轨迹" aria-label="搜索任务或轨迹"></div></div>
+      <div class="history-selection">
+        <select id="outcome-filter" aria-label="示教结果"><option value="all">全部结果</option><option value="success">成功</option><option value="failure">失败</option></select>
+        <label class="selection-number">选择条数<input id="selection-limit" type="number" min="1" value="10" step="1" aria-label="选择条数"></label>
+        <button id="select-number" class="icon-button" title="选择当前列表前 N 条" aria-label="按条数选择"><i data-lucide="list-checks"></i></button>
+        <span id="selection-count" class="secondary" aria-live="polite">已选 0 条</span>
+        <div class="selection-actions"><button id="export-selected" class="icon-button" title="导出所选轨迹" aria-label="导出所选轨迹" disabled><i data-lucide="download"></i></button><button id="delete-selected" class="icon-button" title="删除所选轨迹" aria-label="删除所选轨迹" disabled><i data-lucide="trash-2"></i></button></div>
+      </div>
+      <div class="table-scroll"><table class="history-table"><thead><tr><th><input id="select-all" type="checkbox" aria-label="选择当前列表全部轨迹"></th><th>原始轨迹</th><th>导出名称</th><th>任务指令</th><th>时长</th><th>帧数</th><th>结果</th><th class="align-right">操作</th></tr></thead><tbody id="history-body"></tbody></table></div>
+      <div id="export-result" class="operation-result" role="status" hidden></div>
+      <div id="history-empty" class="empty-state"><i data-lucide="database"></i><h3>暂无采集记录</h3><button class="button secondary-button" data-view="capture"><i data-lucide="video"></i>返回采集台</button></div>
+    </section>
+    <footer class="dataset-footer"><i data-lucide="folder-open"></i><span>数据目录</span><span id="output-path" class="mono"></span><button id="copy-path" class="icon-button" title="复制数据目录" aria-label="复制数据目录"><i data-lucide="copy"></i></button></footer>
+  </main>
+  <dialog id="review-dialog" class="review-dialog" aria-labelledby="review-title">
+    <header class="dialog-header"><div><span class="eyebrow" id="review-kind">轨迹审核</span><h2 id="review-title">--</h2></div><button class="icon-button" id="close-review" title="关闭" aria-label="关闭审核"><i data-lucide="x"></i></button></header>
+    <div id="review-loading" class="empty-state">加载轨迹中</div>
+    <div id="review-content" hidden>
+      <p class="review-task" id="review-task"></p>
+      <div id="review-videos" class="review-videos"></div>
+      <div class="playback-toolbar">
+        <button class="icon-button" id="play-button" aria-label="播放" title="播放"><i data-lucide="play"></i></button>
+        <button class="icon-button" id="step-back" aria-label="上一帧" title="上一帧"><i data-lucide="step-back"></i></button>
+        <button class="icon-button" id="step-forward" aria-label="下一帧" title="下一帧"><i data-lucide="step-forward"></i></button>
+        <span id="playback-time" class="mono">00:00 / 00:00</span>
+        <input id="seek-input" type="range" min="0" max="1" step="1" value="0" aria-label="回放帧位置">
+        <select id="playback-speed" aria-label="回放速度" title="回放速度"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+        <label class="checkbox-label"><input type="checkbox" id="loop-toggle">循环</label>
+      </div>
+      <div class="chart-toolbar"><div class="legend"><span><b class="line-key green"></b>从臂反馈</span><span><b class="line-key orange"></b>主臂目标</span></div><select id="joint-select" aria-label="关节曲线"></select></div>
+      <canvas id="trajectory-chart" aria-label="关节状态与动作曲线"></canvas>
+      <div id="review-issues" class="review-issues"></div>
+      <button id="robot-replay-button" class="button secondary-button"><i data-lucide="bot"></i>真机回放</button>
+    </div>
+    <footer class="dialog-footer"><span id="review-details" class="secondary"></span><div id="review-actions"><button id="discard-button" class="button danger-outline"><i data-lucide="trash-2"></i>丢弃</button><button id="review-failure-button" class="button danger-outline"><i data-lucide="flag"></i>保存失败</button><button id="accept-button" class="button primary"><i data-lucide="check"></i>接受并保存</button></div></footer>
+  </dialog>
+  <dialog id="devices-dialog" class="devices-dialog" aria-labelledby="devices-title">
+    <header class="dialog-header"><h2 id="devices-title">设备状态</h2><button class="icon-button" id="close-devices" title="关闭" aria-label="关闭设备详情"><i data-lucide="x"></i></button></header>
+    <div id="device-list" class="device-list"></div>
+    <div class="technical-error" id="device-error"></div>
+    <footer class="dialog-footer"><span id="device-mode" class="secondary"></span><button id="reconnect-button" class="button secondary-button"><i data-lucide="refresh-cw"></i>重新连接</button></footer>
+  </dialog>
+  <dialog id="discard-dialog" class="confirm-dialog" aria-labelledby="discard-title"><h2 id="discard-title">丢弃这条轨迹？</h2><p id="discard-task" class="secondary"></p><div class="confirm-actions"><button id="cancel-discard" class="button secondary-button">取消</button><button id="confirm-discard" class="button danger"><i data-lucide="trash-2"></i>确认丢弃</button></div></dialog>
+  <dialog id="delete-dialog" class="confirm-dialog" aria-labelledby="delete-title"><h2 id="delete-title">删除所选轨迹？</h2><p id="delete-summary" class="secondary"></p><div class="confirm-actions"><button id="cancel-delete" class="button secondary-button">取消</button><button id="confirm-delete" class="button danger"><i data-lucide="trash-2"></i>确认删除</button></div></dialog>
+  <dialog id="batch-dialog" class="confirm-dialog" aria-labelledby="batch-title"><h2 id="batch-title">批量审核</h2><p id="batch-summary"></p><div class="confirm-actions"><button id="cancel-batch" class="button secondary-button">取消</button><button id="confirm-batch" class="button primary"><i data-lucide="check"></i>确认处理</button></div></dialog>
+  <dialog id="export-dialog" class="form-dialog" aria-labelledby="export-title"><header class="dialog-header"><h2 id="export-title">导出轨迹</h2><button id="close-export" class="icon-button" title="关闭" aria-label="关闭导出"><i data-lucide="x"></i></button></header><div class="form-body"><p id="export-summary"></p><label for="export-destination">本机目标目录（新目录）</label><input id="export-destination" type="text" placeholder="/media/ubun/16T/Dataset/piper_eva_data/recognition/export_20260918" spellcheck="false"><p id="export-error" class="form-error" role="alert"></p></div><footer class="dialog-footer"><button id="download-export" class="button secondary-button"><i data-lucide="file-archive"></i>下载 ZIP</button><button id="confirm-export" class="button primary"><i data-lucide="folder-output"></i>导出到目录</button></footer></dialog>
+  <dialog id="robot-dialog" class="form-dialog" aria-labelledby="robot-title">
+    <header class="dialog-header"><h2 id="robot-title">真机回放</h2><button id="close-robot" class="icon-button" title="关闭并停止" aria-label="关闭真机回放"><i data-lucide="x"></i></button></header>
+    <div class="form-body">
+      <div class="replay-options"><label>轨迹来源<select id="robot-field"><option value="action">主臂目标轨迹</option><option value="observation.state">从臂反馈轨迹</option></select></label><label>速度<select id="robot-speed"><option value="0.25">0.25 倍</option><option value="0.5">0.5 倍</option><option value="1" selected>1 倍（采集原速）</option></select></label><button id="replay-check" class="button secondary-button"><i data-lucide="scan-line"></i>预检轨迹</button></div>
+      <label class="safety-check"><input id="robot-gripper" type="checkbox">同时回放夹爪（默认仅六轴，夹爪不发送指令）</label>
+      <p id="robot-plan" role="status">等待预检</p><div id="robot-poses" class="table-scroll"></div>
+      <label class="safety-check"><input id="leader-disconnected" type="checkbox">主臂已断开 CAN 控制连接，其他控制程序已关闭</label>
+      <label class="safety-check"><input id="workspace-clear" type="checkbox">从臂已使能，回起点及回放路径无障碍，急停可用</label>
+      <p class="secondary">先回起点，再回放。勾选夹爪时两个阶段都会驱动夹爪。浏览器失联或关闭窗口会停止；通信故障时请使用硬件急停。</p>
+      <p id="robot-error" class="form-error" role="alert"></p>
+    </div>
+    <p id="robot-progress" role="status"></p>
+    <footer class="dialog-footer"><button id="robot-stop" class="button danger" disabled><i data-lucide="square"></i>停止回放</button><button id="robot-start" class="button primary" disabled><i data-lucide="play"></i>回起点并回放</button></footer>
+  </dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

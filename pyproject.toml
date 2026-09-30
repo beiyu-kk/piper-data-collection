@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "piper-capture"
+version = "0.1.0"
+description = "Timestamp-aligned Piper leader/follower capture for openpi"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26,<3",
+  "pyarrow>=17,<24",
+  "av>=14,<18",
+  "opencv-python>=4.10,<5",
+  "PyYAML>=6,<7",
+  "python-can>=4.4,<5",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+]
+
+[project.optional-dependencies]
+hardware = ["piper-sdk==0.6.1", "pyrealsense2>=2.55,<3"]
+dev = ["pytest>=8,<10", "ruff>=0.11", "httpx>=0.28,<1", "playwright>=1.50,<2"]
+
+[tool.uv.sources]
+piper-sdk = { path = "../openpi/piper_sdk", editable = true }
+
+[project.scripts]
+piper-capture = "piper_capture.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
