@@ -1,0 +1,15 @@
+output: /media/ubun/16T/Dataset/piper_data/block_riri_2
+task: "Pick up the block"
+fps: 30
+arms:
+  - name: right
+    state_can: can0
+    command_can: can0
+cameras:
+  - name: top_head
+    backend: realsense
+    serial: "339322074804"
+  - name: hand_right
+    backend: realsense
+    serial: "346522074547"
+
